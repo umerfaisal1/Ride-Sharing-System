@@ -30,6 +30,7 @@ struct User
 	User *left; // BST
 	User *right;
 };
+User *userRoot = nullptr;
 struct RideOffer
 {
 	int offerId;
@@ -51,6 +52,69 @@ struct RideRequest
 	int latest;
 	RideRequest *next;
 };
+User* CreateUser(User* root, int userId, const char *name, int isDriver) {
+    if (!root) {
+        User* newUser = new User;
+        newUser->userId = userId;
+        newUser->name = new char[strlen(name)+1];
+        strcpy(newUser->name, name);
+        newUser->isDriver = isDriver;
+        newUser->rating = 5; // default rating
+        newUser->left = newUser->right = nullptr;
+        return newUser;
+    }
+
+    if (userId < root->userId) {
+        root->left = CreateUser(root->left, userId, name, isDriver);
+    } else {
+        root->right = CreateUser(root->right, userId, name, isDriver);
+    }
+
+    return root;
+}
+
+// Search user by ID
+User* SearchUser(User* root, int userId) {
+    if (!root)
+	 return nullptr;
+    if (root->userId == userId)
+	 return root;
+    if (userId < root->userId)
+	 return SearchUser(root->left, userId);
+    else
+	 return SearchUser(root->right, userId);
+}
+
+void PrintUser(User* u) {
+    if (!u) return;
+    cout << "ID: " << u->userId
+         << " | Name: " << u->name
+         << " | ";
+    if (u->isDriver == 1)
+        cout << "Driver";
+    else
+        cout << "Passenger";
+    cout << " | Rating: " << u->rating << endl;
+}
+
+// Inorder print all users
+void PrintAllUsers(User* root) {
+    if (!root) return;
+    PrintAllUsers(root->left);
+    PrintUser(root);
+    PrintAllUsers(root->right);
+}
+
+// Print user ride history
+void PrintUserHistory(int userId) {
+    User* u = SearchUser(userRoot, userId);
+    if (!u) { 
+        cout << "User not found!" << endl; 
+        return; 
+    }
+    cout << "User found: " << u->name << " (ID " << u->userId << ")" << endl;
+}
+
 
 RoadLink* appendNodetoRoadList(RoadLink* head, RoadLink* new_node)
 
