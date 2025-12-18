@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
+#include <algorithm>
 #include "user.h"
 //#include <ctring>
 
@@ -18,6 +20,7 @@ User* CreateUser(User* root, int userId, const char *name, int isDriver) {
         strcpy(newUser->name, name);
         newUser->isDriver = isDriver;
         newUser->rating = 5; // default rating
+        newUser->completedRides = 0;
         newUser->history = nullptr;
         newUser->left = newUser->right = nullptr;
         return newUser;
@@ -53,7 +56,10 @@ void PrintUser(User* u) {
         cout << "Driver";
     else
         cout << "Passenger";
-    cout << " | Rating: " << u->rating << endl;
+    cout << " | Rating: " << u->rating;
+    if (u->isDriver == 1)
+        cout << " | CompletedRides: " << u->completedRides;
+    cout << endl;
 }
 
 // Inorder print all users
@@ -148,6 +154,57 @@ bool PassengerExists(int passengerId)
 
     // passenger = isDriver == 0
     return (u->isDriver == 0);
+}
+
+static void CollectDrivers(User* root, vector<User*>& out)
+{
+    if (!root) return;
+    CollectDrivers(root->left, out);
+    if (root->isDriver == 1)
+        out.push_back(root);
+    CollectDrivers(root->right, out);
+}
+
+void PrintTopDrivers(int k)
+{
+    if (k <= 0)
+    {
+        cout << "K must be > 0\n";
+        return;
+    }
+
+    vector<User*> drivers;
+    CollectDrivers(userRoot, drivers);
+
+    if (drivers.empty())
+    {
+        cout << "No drivers found.\n";
+        return;
+    }
+
+    sort(drivers.begin(), drivers.end(),
+         [](const User* a, const User* b)
+         {
+             if (a->completedRides != b->completedRides)
+                 return a->completedRides > b->completedRides;
+             // tie-breaker: higher rating, then smaller userId
+             if (a->rating != b->rating)
+                 return a->rating > b->rating;
+             return a->userId < b->userId;
+         });
+
+    int limit = (k < (int)drivers.size()) ? k : (int)drivers.size();
+    cout << "Top " << limit << " drivers by completed rides:\n";
+    for (int i = 0; i < limit; i++)
+    {
+        User* d = drivers[i];
+        cout << (i + 1) << ") "
+             << "ID: " << d->userId
+             << " | Name: " << d->name
+             << " | CompletedRides: " << d->completedRides
+             << " | Rating: " << d->rating
+             << '\n';
+    }
 }
 
 

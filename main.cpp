@@ -75,9 +75,10 @@ static void Menu()
     cout << "10) Match next request (creates active ride + history)\n";
     cout << "11) Print user ride history\n";
     cout << "12) Reachable areas within cost (from an offer)\n";
-    cout << "13) SAVE ALL (Phase 10)\n";
-    cout << "14) LOAD ALL (Phase 10)\n";
-    cout << "15) Reset in-memory state (for testing load)\n";
+    cout << "13) Top-K drivers (by completed rides)\n";
+    cout << "14) SAVE ALL (Phase 10)\n";
+    cout << "15) LOAD ALL (Phase 10)\n";
+    cout << "16) Reset in-memory state (for testing load)\n";
     cout << "0) Exit\n";
 }
 
@@ -200,19 +201,25 @@ int main()
         }
         case 13:
         {
+            int k = ReadInt("K: ");
+            PrintTopDrivers(k);
+            break;
+        }
+        case 14:
+        {
             bool ok = SaveAll(".");
             cout << (ok ? "Saved: users.dat, roads.dat, offers.dat, active_rides.dat, history.dat\n"
                         : "Save failed.\n");
             break;
         }
-        case 14:
+        case 15:
         {
             ResetInMemoryState();
             bool ok = LoadAll(".");
             cout << (ok ? "Loaded all data from .dat files.\n" : "Load failed.\n");
             break;
         }
-        case 15:
+        case 16:
             ResetInMemoryState();
             cout << "State reset.\n";
             break;

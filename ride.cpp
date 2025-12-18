@@ -519,6 +519,13 @@ int MatchNextRequest()
                 else
                     AddPassengerToActiveRide(ar, req->passengerId);
 
+                // Phase 9 — Track completed rides (treat successful match as completion)
+                {
+                    User* driver = SearchUser(userRoot, off->driverId);
+                    if (driver && driver->isDriver == 1)
+                        driver->completedRides++;
+                }
+
                 AddHistory(off->driverId, off->offerId,
                            req->fromPlace->name, req->toPlace->name,
                            off->departTime);

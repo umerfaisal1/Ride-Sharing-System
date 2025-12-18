@@ -49,7 +49,7 @@ static void SaveUsersInOrder(ofstream& out, User* root)
     if (!root) return;
     SaveUsersInOrder(out, root->left);
     out << root->userId << ' ' << root->name << ' '
-        << root->isDriver << ' ' << root->rating << '\n';
+        << root->isDriver << ' ' << root->rating << ' ' << root->completedRides << '\n';
     SaveUsersInOrder(out, root->right);
 }
 
@@ -226,12 +226,23 @@ bool LoadAll(const char* baseDir)
         in >> n;
         for (int i = 0; i < n; i++)
         {
-            int id, isDriver, rating;
+            int id, isDriver, rating, completedRides;
             string name;
-            in >> id >> name >> isDriver >> rating;
+            if (!(in >> id >> name >> isDriver >> rating))
+                return false;
+            // Backward compatibility: older files might not have completedRides.
+            if (!(in >> completedRides))
+            {
+                completedRides = 0;
+                in.clear();
+            }
             userRoot = CreateUser(userRoot, id, name.c_str(), isDriver);
             User* u = SearchUser(userRoot, id);
-            if (u) u->rating = rating;
+            if (u)
+            {
+                u->rating = rating;
+                u->completedRides = completedRides;
+            }
         }
     }
 

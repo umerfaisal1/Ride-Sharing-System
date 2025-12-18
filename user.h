@@ -17,6 +17,7 @@ struct User
 	char *name;
 	int isDriver; // 1=driver,0=passenger
 	int rating;
+    int completedRides; // Phase 9: count of completed rides (drivers only)
 	HistoryNode* history;
 	User *left; // BST
 	User *right;
@@ -40,6 +41,8 @@ void AddHistory(int userId, int rideId,
 void PrintHistoryBST(HistoryNode* root);
 
 void PrintUserHistory(int userId);
+
+void PrintTopDrivers(int k);
 
 bool PassengerExists(int passengerId);
 
