@@ -40,12 +40,27 @@ struct RideRequest
     int heapIndex;
 };
 
+struct PassengerNode {
+    int passengerId;
+    PassengerNode* next;
+};
+
+struct ActiveRide {
+    int rideId;
+    RideOffer* offer;
+    PassengerNode* passengers;
+    ActiveRide* next;
+};
+
+
+
+
 
 // =======================
 // GLOBAL LIST HEADS
 // (defined in ride.cpp)
 // =======================
-extern RideOffer*   offerHead;
+extern RideOffer* offerHead;
 extern RideRequest* requestHead;
 extern int requestCount;
 

@@ -1,66 +1,90 @@
-// ============================
 #include "ride.h"
-#include <climits>
-// ============================
-
-
 #include <iostream>
 #include <cstring>
+#include <climits>
+
 using namespace std;
 
 #define MAX_REQUESTS 1000
+#define ACTIVE_RIDE_TABLE_SIZE 101
 
 RideRequest *requestHeap[MAX_REQUESTS];
+ActiveRide *activeRideTable[ACTIVE_RIDE_TABLE_SIZE] = {nullptr};
+
+int HashRideId(int rideId)
+{
+    return rideId % ACTIVE_RIDE_TABLE_SIZE;
+}
+
+ActiveRide *FindActiveRide(int rideId)
+{
+    int idx = HashRideId(rideId);
+    ActiveRide *cur = activeRideTable[idx];
+    while (cur)
+    {
+        if (cur->rideId == rideId)
+            return cur;
+        cur = cur->next;
+    }
+    return nullptr;
+}
+
+void InsertActiveRide(RideOffer *offer, int passengerId)
+{
+    int idx = HashRideId(offer->offerId);
+
+    ActiveRide *ar = new ActiveRide;
+    ar->rideId = offer->offerId;
+    ar->offer = offer;
+
+    PassengerNode *p = new PassengerNode;
+    p->passengerId = passengerId;
+    p->next = nullptr;
+    ar->passengers = p;
+
+    ar->next = activeRideTable[idx];
+    activeRideTable[idx] = ar;
+}
+
+void AddPassengerToActiveRide(ActiveRide *ar, int passengerId)
+{
+    PassengerNode *p = new PassengerNode;
+    p->passengerId = passengerId;
+    p->next = ar->passengers;
+    ar->passengers = p;
+}
 
 // Forward declaration
 
-
 // ---------------- RIDE OFFER ----------------
 
-
 // ---------------- RIDE REQUEST ----------------
-
 
 // Global heads (defined in ride.cpp)
 
 // ----------- REQUIRED FUNCTIONS -----------
 
-
-int MatchNextRequest();
-
-// Utility / placeholders
-void PrintOffers();
-void PrintRequests();
-
-// Provided by graph / place module
-Place* GetOrCreatePlace(const char *name);
-
-
-
 // ============================
 // ride.cpp
 // ============================
 
-
 // ---------------- GLOBAL HEADS ----------------
 
-
 // ---------------- CREATE RIDE OFFER ----------------
-RideOffer* CreateRideOffer(int offerId, int driverId,
+RideOffer *CreateRideOffer(int offerId, int driverId,
                            const char *start, const char *end,
                            int departTime, int capacity)
 {
     RideOffer *o = new RideOffer;
 
-    o->offerId    = offerId;
-    o->driverId   = driverId;
+    o->offerId = offerId;
+    o->driverId = driverId;
     o->startPlace = GetOrCreatePlace(start);
-    o->endPlace   = GetOrCreatePlace(end);
+    o->endPlace = GetOrCreatePlace(end);
     o->departTime = departTime;
-    o->capacity   = capacity;
-    o->seatsLeft  = capacity;
+    o->capacity = capacity;
+    o->seatsLeft = capacity;
 
-    // Insert at head of linked list
     o->next = offerHead;
     offerHead = o;
 
@@ -69,106 +93,50 @@ RideOffer* CreateRideOffer(int offerId, int driverId,
 
 void swapRequests(int i, int j)
 {
-    RideRequest *temp = requestHeap[i];
+    RideRequest *tmp = requestHeap[i];
     requestHeap[i] = requestHeap[j];
-    requestHeap[j] = temp;
+    requestHeap[j] = tmp;
 
     requestHeap[i]->heapIndex = i;
     requestHeap[j]->heapIndex = j;
 }
 
-void heapifyUp(int index)
+void heapifyUp(int i)
 {
-    while (index > 0)
+    while (i > 0)
     {
-        int parent = (index - 1) / 2;
-
-        if (requestHeap[parent]->earliest <= requestHeap[index]->earliest)
+        int p = (i - 1) / 2;
+        if (requestHeap[p]->earliest <= requestHeap[i]->earliest)
             break;
-
-        swapRequests(parent, index);
-        index = parent;
+        swapRequests(p, i);
+        i = p;
     }
 }
 
-
-RideRequest* CreateRideRequest(int requestId, int passengerId,
+RideRequest *CreateRideRequest(int requestId, int passengerId,
                                const char *from, const char *to,
                                int earliest, int latest)
 {
-    // Step 4.3.1 — Validate passenger
     if (!PassengerExists(passengerId))
-    {
-        cout << "Error: Passenger does not exist.\n";
-        return NULL;
-    }
+        return nullptr;
 
-    // Step 4.3.2 — Convert place names to Place*
-    Place *fromPlace = GetOrCreatePlace(from);
-    Place *toPlace   = GetOrCreatePlace(to);
-
-    // Step 4.3.3 — Create request object
     RideRequest *r = new RideRequest;
-    r->requestId   = requestId;
+    r->requestId = requestId;
     r->passengerId = passengerId;
-    r->fromPlace   = fromPlace;
-    r->toPlace     = toPlace;
-    r->earliest    = earliest;
-    r->latest      = latest;
+    r->fromPlace = GetOrCreatePlace(from);
+    r->toPlace = GetOrCreatePlace(to);
+    r->earliest = earliest;
+    r->latest = latest;
 
-    // Step 4.2 — Insert into min-heap (priority queue)
-    if (requestCount >= MAX_REQUESTS)
-    {
-        cout << "Error: Request heap full.\n";
-        delete r;
-        return NULL;
-    }
+    int idx = requestCount++;
+    requestHeap[idx] = r;
+    r->heapIndex = idx;
 
-    int index = requestCount;
-    requestHeap[index] = r;
-    r->heapIndex = index;
-    requestCount++;
-
-    heapifyUp(index);
-
-    // requestHead always points to heap root
+    heapifyUp(idx);
     requestHead = requestHeap[0];
 
     return r;
 }
-
-
-// ---------------- MATCH NEXT REQUEST ----------------
-/*int MatchNextRequest()
-{
-    if (requestHead == nullptr || offerHead == nullptr)
-        return 0;
-
-    RideRequest *req = requestHead;
-    RideOffer   *off = offerHead;
-
-    while (off != nullptr)
-    {
-        if (off->seatsLeft > 0 &&
-            off->startPlace == req->fromPlace &&
-            off->endPlace   == req->toPlace &&
-            off->departTime >= req->earliest &&
-            off->departTime <= req->latest)
-        {
-            // Match found
-            off->seatsLeft--;
-
-            // Remove request from list
-            requestHead = req->next;
-            delete req;
-
-            return 1; // success
-        }
-        off = off->next;
-    }
-
-    return 0; // no match
-}*/
 
 // ---------------- PRINT OFFERS (DEBUG) ----------------
 void PrintOffers()
@@ -185,86 +153,53 @@ void PrintOffers()
     }
 }
 
-// ---------------- PRINT REQUESTS (DEBUG) ----------------
-/*void PrintRequests()
+
+
+    // ---------- Helper: store distance to a place ----------
+    struct DistEntry
 {
-    RideRequest *r = requestHead;
-    cout << "Ride Requests:\n";
-    while (r)
-    {
-        cout << "RequestID: " << r->requestId
-             << " Passenger: " << r->passengerId
-             << " Window: [" << r->earliest
-             << ", " << r->latest << "]" << endl;
-        r = r->next;
-    }
-}*/
-
-/*
----------------- TEST EXAMPLE ----------------
-int main()
-{
-    CreateRideOffer(1, 101, "A", "B", 10, 2);
-    CreateRideOffer(2, 102, "A", "C", 11, 1);
-
-    CreateRideRequest(1, 201, "A", "B", 9, 11);
-    CreateRideRequest(2, 202, "A", "B", 10, 12);
-
-    PrintOffers();
-    PrintRequests();
-
-    cout << "Match: " << MatchNextRequest() << endl;
-    cout << "Match: " << MatchNextRequest() << endl;
-    cout << "Match: " << MatchNextRequest() << endl;
-
-    PrintOffers();
-}
-*/
-
-// =======================================================
-// STEP 1.4: Reachable Areas Within Cost (DIJKSTRA)
-// Computes and prints all areas reachable from a ride offer's
-// start place within a given cost bound.
-// =======================================================
-
-
-
-// ---------- Helper: store distance to a place ----------
-struct DistEntry {
-    Place* place;
+    Place *place;
     int dist;
 };
 
 // ---------- Simple Min Priority Queue (array-based) ----------
-struct MinPQ {
-    Place* p[100];
-    int    d[100];
+struct MinPQ
+{
+    Place *p[100];
+    int d[100];
     int size;
 
     MinPQ() { size = 0; }
 
-    void push(Place* place, int dist) {
+    void push(Place *place, int dist)
+    {
         int i = size++;
         p[i] = place;
         d[i] = dist;
-        while (i > 0 && d[(i-1)/2] > d[i]) {
-            swap(d[i], d[(i-1)/2]);
-            swap(p[i], p[(i-1)/2]);
-            i = (i-1)/2;
+        while (i > 0 && d[(i - 1) / 2] > d[i])
+        {
+            swap(d[i], d[(i - 1) / 2]);
+            swap(p[i], p[(i - 1) / 2]);
+            i = (i - 1) / 2;
         }
     }
 
-    void pop(Place*& place, int& dist) {
+    void pop(Place *&place, int &dist)
+    {
         place = p[0];
-        dist  = d[0];
+        dist = d[0];
         p[0] = p[--size];
         d[0] = d[size];
         int i = 0;
-        while (true) {
-            int l = 2*i + 1, r = 2*i + 2, s = i;
-            if (l < size && d[l] < d[s]) s = l;
-            if (r < size && d[r] < d[s]) s = r;
-            if (s == i) break;
+        while (true)
+        {
+            int l = 2 * i + 1, r = 2 * i + 2, s = i;
+            if (l < size && d[l] < d[s])
+                s = l;
+            if (r < size && d[r] < d[s])
+                s = r;
+            if (s == i)
+                break;
             swap(d[i], d[s]);
             swap(p[i], p[s]);
             i = s;
@@ -275,19 +210,21 @@ struct MinPQ {
 };
 
 // ---------- MAIN FUNCTION ----------
-void PrintReachableWithinCost(RideOffer* offer, int costBound)
+void PrintReachableWithinCost(RideOffer *offer, int costBound)
 {
-    if (!offer || !offer->startPlace) return;
+    if (!offer || !offer->startPlace)
+        return;
 
     DistEntry dist[100];
     int distCount = 0;
 
-    auto getIndex = [&](Place* p) {
+    auto getIndex = [&](Place *p)
+    {
         for (int i = 0; i < distCount; i++)
             if (dist[i].place == p)
                 return i;
         dist[distCount].place = p;
-        dist[distCount].dist  = INT_MAX;
+        dist[distCount].dist = INT_MAX;
         return distCount++;
     };
 
@@ -301,18 +238,19 @@ void PrintReachableWithinCost(RideOffer* offer, int costBound)
 
     while (!pq.empty())
     {
-        Place* u;
+        Place *u;
         int d_u;
         pq.pop(u, d_u);
 
-        if (d_u > costBound) break;
+        if (d_u > costBound)
+            break;
 
         cout << "- " << u->name << " (cost=" << d_u << ")" << endl;
 
-        RoadLink* edge = u->firstLink;
+        RoadLink *edge = u->firstLink;
         while (edge)
         {
-            Place* v = edge->to;
+            Place *v = edge->to;
             int newDist = d_u + edge->cost;
 
             if (newDist <= costBound)
@@ -330,18 +268,18 @@ void PrintReachableWithinCost(RideOffer* offer, int costBound)
 }
 
 bool ComputeShortestPath(
-    Place* start,
-    Place* end,
-    Place* path[],
-    int& pathLen
-)
+    Place *start,
+    Place *end,
+    Place *path[],
+    int &pathLen)
 {
-    Place* places[100];
+    Place *places[100];
     int dist[100];
-    Place* parent[100];
+    Place *parent[100];
     int count = 0;
 
-    auto getIndex = [&](Place* p) {
+    auto getIndex = [&](Place *p)
+    {
         for (int i = 0; i < count; i++)
             if (places[i] == p)
                 return i;
@@ -359,17 +297,18 @@ bool ComputeShortestPath(
 
     while (!pq.empty())
     {
-        Place* u;
+        Place *u;
         int d;
         pq.pop(u, d);
 
         int uIdx = getIndex(u);
-        if (u == end) break;
+        if (u == end)
+            break;
 
-        RoadLink* e = u->firstLink;
+        RoadLink *e = u->firstLink;
         while (e)
         {
-            Place* v = e->to;
+            Place *v = e->to;
             int vIdx = getIndex(v);
             int nd = d + e->cost;
 
@@ -389,7 +328,7 @@ bool ComputeShortestPath(
 
     // reconstruct path (reverse)
     pathLen = 0;
-    Place* cur = end;
+    Place *cur = end;
     while (cur)
     {
         path[pathLen++] = cur;
@@ -405,11 +344,11 @@ bool ComputeShortestPath(
 }
 
 bool IsSubPath(
-    Place* driverPath[], int dLen,
-    Place* passengerPath[], int pLen
-)
+    Place *driverPath[], int dLen,
+    Place *passengerPath[], int pLen)
 {
-    if (pLen > dLen) return false;
+    if (pLen > dLen)
+        return false;
 
     for (int i = 0; i <= dLen - pLen; i++)
     {
@@ -422,34 +361,35 @@ bool IsSubPath(
                 break;
             }
         }
-        if (match) return true;
+        if (match)
+            return true;
     }
     return false;
 }
 
-RideRequest* ExtractMinRequest()
+RideRequest *ExtractMinRequest()
 {
     if (requestCount == 0)
         return nullptr;
 
-    RideRequest* minReq = requestHeap[0];
-
+    RideRequest *minReq = requestHeap[0];
     requestHeap[0] = requestHeap[--requestCount];
+
     if (requestCount > 0)
     {
         requestHeap[0]->heapIndex = 0;
-
         int i = 0;
         while (true)
         {
-            int l = 2*i + 1, r = 2*i + 2, s = i;
+            int l = 2 * i + 1, r = 2 * i + 2, s = i;
             if (l < requestCount &&
                 requestHeap[l]->earliest < requestHeap[s]->earliest)
                 s = l;
             if (r < requestCount &&
                 requestHeap[r]->earliest < requestHeap[s]->earliest)
                 s = r;
-            if (s == i) break;
+            if (s == i)
+                break;
             swapRequests(i, s);
             i = s;
         }
@@ -461,10 +401,11 @@ RideRequest* ExtractMinRequest()
 
 int MatchNextRequest()
 {
-    RideRequest* req = ExtractMinRequest();
-    if (!req) return 0;
+    RideRequest *req = ExtractMinRequest();
+    if (!req)
+        return 0;
 
-    RideOffer* off = offerHead;
+    RideOffer *off = offerHead;
 
     while (off)
     {
@@ -472,37 +413,27 @@ int MatchNextRequest()
             off->departTime >= req->earliest &&
             off->departTime <= req->latest)
         {
-            Place* driverPath[100];
-            Place* passengerPath[100];
-            int dLen, pLen;
+            Place *dp[100], *pp[100];
+            int dl, pl;
 
-            bool dOK = ComputeShortestPath(
-                off->startPlace,
-                off->endPlace,
-                driverPath, dLen
-            );
-
-            bool pOK = ComputeShortestPath(
-                req->fromPlace,
-                req->toPlace,
-                passengerPath, pLen
-            );
-
-            if (dOK && pOK &&
-                IsSubPath(driverPath, dLen, passengerPath, pLen))
+            if (ComputeShortestPath(off->startPlace, off->endPlace, dp, dl) &&
+                ComputeShortestPath(req->fromPlace, req->toPlace, pp, pl) &&
+                IsSubPath(dp, dl, pp, pl))
             {
                 off->seatsLeft--;
 
-                AddHistory(off->driverId,
-                           off->offerId,
-                           req->fromPlace->name,
-                           req->toPlace->name,
+                ActiveRide *ar = FindActiveRide(off->offerId);
+                if (!ar)
+                    InsertActiveRide(off, req->passengerId);
+                else
+                    AddPassengerToActiveRide(ar, req->passengerId);
+
+                AddHistory(off->driverId, off->offerId,
+                           req->fromPlace->name, req->toPlace->name,
                            off->departTime);
 
-                AddHistory(req->passengerId,
-                           off->offerId,
-                           req->fromPlace->name,
-                           req->toPlace->name,
+                AddHistory(req->passengerId, off->offerId,
+                           req->fromPlace->name, req->toPlace->name,
                            off->departTime);
 
                 delete req;
@@ -512,19 +443,13 @@ int MatchNextRequest()
         off = off->next;
     }
 
-    // No match → reinsert request
-    CreateRideRequest(req->requestId,
-                      req->passengerId,
-                      req->fromPlace->name,
-                      req->toPlace->name,
-                      req->earliest,
-                      req->latest);
-
+    // no match → reinsert
+    CreateRideRequest(req->requestId, req->passengerId,
+                      req->fromPlace->name, req->toPlace->name,
+                      req->earliest, req->latest);
     delete req;
     return 0;
 }
-
-
 
 // =======================================================
 // TEST CODE: Verify Ride Creation, Matching, and Reachability
@@ -536,7 +461,4 @@ Compile example:
  g++ ride.cpp test_ride.cpp -o test
 */
 
-
 // ---------- MAIN TEST ----------
-
-
