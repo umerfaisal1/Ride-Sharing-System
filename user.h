@@ -45,6 +45,7 @@ void PrintUserHistory(int userId);
 void PrintTopDrivers(int k);
 
 bool PassengerExists(int passengerId);
+bool DriverExists(int driverId);
 
 
 #endif

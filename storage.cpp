@@ -272,7 +272,7 @@ bool LoadAll(const char* baseDir)
             int offerId, driverId, departTime, capacity, seatsLeft;
             string start, end;
             in >> offerId >> driverId >> start >> end >> departTime >> capacity >> seatsLeft;
-            RideOffer* o = CreateRideOffer(offerId, driverId, start.c_str(), end.c_str(), departTime, capacity);
+            RideOffer* o = CreateRideOffer(offerId, driverId, start.c_str(), end.c_str(), departTime, capacity, true);
             if (o) o->seatsLeft = seatsLeft;
         }
     }

@@ -24,6 +24,12 @@ struct RideOffer {
     RideOffer* next;
 };
 
+struct DistEntry
+{
+    Place *place;
+    int dist;
+};
+
 // =======================
 // RIDE REQUEST
 // =======================
@@ -81,7 +87,8 @@ RideOffer* CreateRideOffer(
     const char* start,
     const char* end,
     int departTime,
-    int capacity
+    int capacity,
+    bool silent = false
 );
 
 RideRequest* CreateRideRequest(
@@ -90,7 +97,8 @@ RideRequest* CreateRideRequest(
     const char* from,
     const char* to,
     int earliest,
-    int latest
+    int latest,
+    bool silent = false
 );
 
 int MatchNextRequest();

@@ -76,8 +76,8 @@ static void Menu()
     cout << "11) Print user ride history\n";
     cout << "12) Reachable areas within cost (from an offer)\n";
     cout << "13) Top-K drivers (by completed rides)\n";
-    cout << "14) SAVE ALL (Phase 10)\n";
-    cout << "15) LOAD ALL (Phase 10)\n";
+    cout << "14) SAVE ALL\n";
+    cout << "15) LOAD ALL\n";
     cout << "16) Reset in-memory state (for testing load)\n";
     cout << "0) Exit\n";
 }
@@ -147,8 +147,6 @@ int main()
             RideOffer *o = CreateRideOffer(offerId, driverId, start.c_str(), end.c_str(), depart, cap);
             if (!o)
                 cout << "Offer creation failed.\n";
-            else
-                cout << "Offer created.\n";
             break;
         }
         case 7:
@@ -165,8 +163,6 @@ int main()
             RideRequest *r = CreateRideRequest(requestId, passengerId, from.c_str(), to.c_str(), earliest, latest);
             if (!r)
                 cout << "Request creation failed (passenger missing or invalid).\n";
-            else
-                cout << "Request created.\n";
             break;
         }
         case 9:

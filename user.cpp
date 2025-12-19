@@ -156,6 +156,17 @@ bool PassengerExists(int passengerId)
     return (u->isDriver == 0);
 }
 
+bool DriverExists(int driverId)
+{
+    User* u = SearchUser(userRoot, driverId);
+
+    if (u == nullptr)
+        return false;
+
+    // driver = isDriver == 1
+    return (u->isDriver == 1);
+}
+
 static void CollectDrivers(User* root, vector<User*>& out)
 {
     if (!root) return;
