@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <limits>
-#include <string>
+#include <cstring>
 
 #include "roads.h"
 #include "ride.h"

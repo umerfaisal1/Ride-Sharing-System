@@ -1,6 +1,6 @@
 // Ride Sharing Project
 // Usman Joined
-
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <sstream>

@@ -216,13 +216,15 @@ RideRequest *CreateRideRequest(int requestId, int passengerId,
 void PrintOffers()
 {
     RideOffer *o = offerHead;
-    cout << "Ride Offers:\n";
+    cout << "Ride Offers:\n\n";
     while (o)
     {
-        cout << "OfferID: " << o->offerId
-             << " Driver: " << o->driverId
-             << " SeatsLeft: " << o->seatsLeft
-             << " Depart: " << o->departTime << endl;
+        cout << "Offer ID: " << o->offerId
+             << " | Driver ID: " << o->driverId
+             << " | SeatsLeft: " << o->seatsLeft
+             << " | Depart: " << o->departTime 
+             << " | From : " << (o->startPlace ? o->startPlace->name : "NULL")
+             << " | To : " << (o->endPlace ? o->endPlace->name : "NULL") <<endl << endl;
         o = o->next;
     }
 }
@@ -235,11 +237,11 @@ void PrintRequests()
         RideRequest* r = requestHeap[i];
         if (!r) continue;
         cout << "RequestID: " << r->requestId
-             << " Passenger: " << r->passengerId
-             << " From: " << (r->fromPlace ? r->fromPlace->name : "NULL")
-             << " To: " << (r->toPlace ? r->toPlace->name : "NULL")
-             << " Earliest: " << r->earliest
-             << " Latest: " << r->latest
+             << " | Passenger: " << r->passengerId
+             << " | From: " << (r->fromPlace ? r->fromPlace->name : "NULL")
+             << " | To: " << (r->toPlace ? r->toPlace->name : "NULL")
+             << " | Earliest: " << r->earliest
+             << " | Latest: " << r->latest
              << '\n';
     }
 }
