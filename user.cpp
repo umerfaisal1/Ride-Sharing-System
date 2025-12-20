@@ -26,7 +26,7 @@ User* CreateUser(User* root, int userId, const char *name, int isDriver) {
         return newUser;
     }
 
-    if (userId < root->userId) {
+    if (userId < root->rating) {
         root->left = CreateUser(root->left, userId, name, isDriver);
     } else {
         root->right = CreateUser(root->right, userId, name, isDriver);
